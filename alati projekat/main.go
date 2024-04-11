@@ -78,38 +78,17 @@ func main() {
 	// Logovanje završetka procesa graceful shutdown-a
 	log.Println("Server shutdown completed")
 
-// Kreiranje HTTP servera
-server := &http.Server{
-	Addr:    "0.0.0.0:8000",
-	Handler: router,
-}
+	// Pokretanje servera u posebnoj gorutini
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
 
-// Pokretanje servera u posebnoj gorutini
-go func() {
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-}()
+	// Čekanje na signal zaustavljanja
+	<-shutdown
 
-// Čekanje na signal zaustavljanja
-<-shutdown
+	// Logovanje početka procesa graceful shutdown-a
+	log.Println("Shutting down server...")
 
-// Logovanje početka procesa graceful shutdown-a
-log.Println("Shutting down server...")
-
-// Pravljenje kanala za oznaku zatvaranja servera
-stop := make(chan struct{})
-go func() {
-	// Zatvaranje HTTP servera
-	if err := server.Shutdown(nil); err != nil {
-		log.Fatalf("Failed to gracefully shutdown server: %v", err)
-	}
-	close(stop)
-}()
-
-// Čekanje na zatvaranje servera ili prekid izvršavanja
-<-stop
-
-// Logovanje završetka procesa graceful shutdown-a
-log.Println("Server shutdown completed")
 }
