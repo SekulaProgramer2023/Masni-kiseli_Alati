@@ -32,7 +32,7 @@ func (c *ConfigInMemRepository) Get(name string, version int) (model.Config, err
 	return config, nil
 }
 
-// Delete implements
+
 func (c ConfigInMemRepository) Delete(name string, version int) error {
 	key := fmt.Sprintf("%s/%d", name, version)
 

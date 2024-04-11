@@ -11,3 +11,4 @@ type ConfigRepository interface {
 	Add(c Config)
 	Delete(name string, version int) error
 }
+
