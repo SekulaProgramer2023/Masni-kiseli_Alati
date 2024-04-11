@@ -13,4 +13,5 @@ type ConfigRepository interface {
 	// todo: dodati metode
 	Add(config Config)
 	Get(name string, version int) (Config, error)
+	Delete(name string, version int) error
 }
