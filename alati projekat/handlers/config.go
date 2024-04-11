@@ -46,3 +46,25 @@ func (c ConfigHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content−Type", "application/json")
 	w.Write(resp)
 }
+
+// DELETE /configs/{name}/{version}
+func (c ConfigHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	// Dobavi naziv i verziju
+	name := mux.Vars(r)["name"]
+	version := mux.Vars(r)["version"]
+	versionInt, err := strconv.Atoi(version)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Pozovi servis metodu za brisanje
+	err = c.service.Delete(name, versionInt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Vrati odgovor
+	w.WriteHeader(http.StatusNoContent)
+}
