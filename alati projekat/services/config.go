@@ -28,14 +28,10 @@ func (s ConfigService) Get(name string, version int) (model.Config, error) {
 }
 
 func (s ConfigService) Delete(name string, version int) error {
-	s.repo.Delete(name, version)
-
 	err := s.repo.Delete(name, version)
 	if err != nil {
-
 		return err
 	}
-
 	return nil
 }
 
