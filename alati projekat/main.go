@@ -78,17 +78,4 @@ func main() {
 	// Logovanje završetka procesa graceful shutdown-a
 	log.Println("Server shutdown completed")
 
-	// Pokretanje servera u posebnoj gorutini
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
-
-	// Čekanje na signal zaustavljanja
-	<-shutdown
-
-	// Logovanje početka procesa graceful shutdown-a
-	log.Println("Shutting down server...")
-
 }

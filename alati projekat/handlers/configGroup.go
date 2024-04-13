@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"alati_projekat/model"
+	"alati_projekat/services"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io"
 	"mime"
 	"net/http"
@@ -11,10 +14,10 @@ import (
 )
 
 type ConfigGroupHandler struct {
-	service service.ConfigGroupService
+	service services.ConfigGroupService
 }
 
-func NewConfigGruopHandler(service service.ConfigGroupService) ConfigGroupHandler {
+func NewConfigGruopHandler(service services.ConfigGroupService) ConfigGroupHandler {
 	return ConfigGroupHandler{
 		service: service,
 	}
@@ -130,7 +133,7 @@ func (c ConfigGroupHandler) AddConfToGroup(w http.ResponseWriter, r *http.Reques
 	key := fmt.Sprintf("%s/%d", nameC, versionC)
 
 	group, _ := c.service.Get(nameG, versionG)
-	conf, _ := service.ConfigService{}.Get(nameC, versionC)
+	conf, _ := services.ConfigService{}.Get(nameC, versionC)
 	group.Configs[key] = &conf
 
 	renderJSON(w, "success Put")
