@@ -5,23 +5,23 @@ import (
 	"alati_projekat/model"
 	"alati_projekat/repositories"
 	"alati_projekat/services"
+	"context"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/gorilla/mux"
+	"time"
 )
 
 func main() {
-	// Kreiranje kanala za kontrolu graceful shutdown-a
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	// Kreiranje repozitorijuma i servisa
 	repo := repositories.NewConfigInMemRepository()
 	service := services.NewConfigService(repo)
+	repoG := repositories.NewConfigGroupInMemRepository()
+	servicesG := services.NewConfigGroupService(repoG)
 
 	// Dodavanje testne konfiguracije
 	params := make(map[string]string)
@@ -36,18 +36,31 @@ func main() {
 
 	// Kreiranje rukovaoca
 	handler := handlers.NewConfigHandler(service)
+	handlerG := handlers.NewConfigGruopHandler(servicesG)
 
 	// Kreiranje rutera
 	router := mux.NewRouter()
 	router.HandleFunc("/configs/{name}/{version}", handler.Get).Methods("GET")
+	router.HandleFunc("/configGroups/{name}/{version}", handlerG.Get).Methods("GET")
+
+	router.HandleFunc("/configGroups/", handlerG.Add).Methods("POST")
 	router.HandleFunc("/configs/", handler.Add).Methods("POST")
+
+	router.HandleFunc("/configGroups/{name}/{version}", handlerG.Delete).Methods("DELETE")
 	router.HandleFunc("/configs/{name}/{version}", handler.Delete).Methods("DELETE")
+
+	router.HandleFunc("/configGroups/{nameG}/{versionG}/config/{nameC}/{versionC}", handlerG.AddConfToGroup).Methods("PUT")
+	router.HandleFunc("/configGroups/{nameG}/{versionG}/{nameC}/{versionC}", handlerG.RemoveConfFromGroup).Methods("PUT")
 
 	// Kreiranje HTTP servera
 	server := &http.Server{
 		Addr:    "0.0.0.0:8000",
 		Handler: router,
 	}
+
+	// Kanal za hvatanje signala za zaustavljanje
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	// Pokretanje servera u posebnoj gorutini
 	go func() {
@@ -62,11 +75,19 @@ func main() {
 	// Logovanje početka procesa graceful shutdown-a
 	log.Println("Shutting down server...")
 
+	// Dodajte ovde sleep
+	time.Sleep(10 * time.Second) // Simulacija rada
+
 	// Pravljenje kanala za oznaku zatvaranja servera
 	stop := make(chan struct{})
 	go func() {
+		// Postavljanje timeout-a za graceful shutdown
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
 		// Zatvaranje HTTP servera
-		if err := server.Shutdown(nil); err != nil {
+		if err := server.Shutdown(ctx); err != nil {
 			log.Fatalf("Failed to gracefully shutdown server: %v", err)
 		}
 		close(stop)
