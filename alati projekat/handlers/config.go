@@ -54,7 +54,7 @@ func (c ConfigHandler) Add(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if mediatype != " application/json" {
+	if mediatype != "application/json" {
 		err := errors.New("expect application/json Content-Type")
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return

@@ -27,16 +27,36 @@ func main() {
 	params := make(map[string]string)
 	params["username"] = "pera"
 	params["port"] = "5432"
+
 	config := model.Config{
 		Name:    "db_config",
 		Version: 2,
 		Params:  params,
 	}
+
+	config2 := model.Config{
+		Name:    "db_config2",
+		Version: 3,
+		Params:  params,
+	}
+
+	configMap := make(map[string]model.Config)
+	configMap["conf1"] = config
+	configMap["conf2"] = config2
+
+	group := model.ConfigGroup{
+		Name:    "db_cg",
+		Version: 2,
+		Configs: configMap,
+	}
+
+	service.Add(config2)
 	service.Add(config)
+	servicesG.Add(group)
 
 	// Kreiranje rukovaoca
 	handler := handlers.NewConfigHandler(service)
-	handlerG := handlers.NewConfigGruopHandler(servicesG)
+	handlerG := handlers.NewConfigGruopHandler(servicesG, service)
 
 	// Kreiranje rutera
 	router := mux.NewRouter()
@@ -75,14 +95,11 @@ func main() {
 	// Logovanje početka procesa graceful shutdown-a
 	log.Println("Shutting down server...")
 
-	// Dodajte ovde sleep
-	time.Sleep(10 * time.Second) // Simulacija rada
-
 	// Pravljenje kanala za oznaku zatvaranja servera
 	stop := make(chan struct{})
 	go func() {
 		// Postavljanje timeout-a za graceful shutdown
-		timeout := 5 * time.Second
+		timeout := 10 * time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
