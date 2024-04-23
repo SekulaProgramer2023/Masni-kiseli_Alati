@@ -71,7 +71,7 @@ func (c ConfigGroupHandler) Add(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if mediatype != " application/json" {
+	if mediatype != "application/json" {
 		err := errors.New("expect application/json Content-Type")
 		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
 		return
@@ -83,12 +83,7 @@ func (c ConfigGroupHandler) Add(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	con := model.ConfigGroup{
-		Name:    rt.Name,
-		Version: rt.Version,
-		Configs: rt.Configs,
-	}
-	c.service.Add(con)
+	c.service.Add(*rt)
 
 	renderJSON(w, rt)
 }
@@ -132,11 +127,20 @@ func (c ConfigGroupHandler) AddConfToGroup(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	key := fmt.Sprintf("%s/%d", nameC, versionC)
+	conf, err := c.serviceConfig.Get(nameC, versionC)
+	if err != nil {
+		http.Error(w, "Failed to fetch config", http.StatusInternalServerError)
+		return
+	}
 
-	group, _ := c.service.Get(nameG, versionG)
-	conf, _ := services.ConfigService{}.Get(nameC, versionC)
-	group.Configs[key] = conf
+	group, err := c.service.Get(nameG, versionG)
+	if err != nil {
+		http.Error(w, "Failed to fetch config group", http.StatusInternalServerError)
+		return
+	}
+
+	group.Configs = append(group.Configs, conf)
+	c.service.Add(group)
 
 	renderJSON(w, "success Put")
 }
@@ -160,10 +164,28 @@ func (c ConfigGroupHandler) RemoveConfFromGroup(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	key := fmt.Sprintf("%s/%d", nameC, versionC)
+	group, err := c.service.Get(nameG, versionG)
+	if err != nil {
+		http.Error(w, "Failed to fetch config group", http.StatusInternalServerError)
+		return
+	}
 
-	group, _ := c.service.Get(nameG, versionG)
-	delete(group.Configs, key)
+	var updatedConfigs []model.Config
+	for _, conf := range group.Configs {
+		confKey := fmt.Sprintf("%s/%d", conf.Name, conf.Version)
+		key := fmt.Sprintf("%s/%d", nameC, versionC)
+		if confKey != key {
+			updatedConfigs = append(updatedConfigs, conf)
+		}
+	}
+	group.Configs = updatedConfigs
+
+	c.service.Add(group)
 
 	renderJSON(w, "success Put")
+}
+
+func (c ConfigGroupHandler) renderJSON(w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(data)
 }

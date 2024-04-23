@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-
 	// Kreiranje repozitorijuma i servisa
 	repo := repositories.NewConfigInMemRepository()
 	service := services.NewConfigService(repo)
@@ -44,10 +43,16 @@ func main() {
 	configMap["conf1"] = config
 	configMap["conf2"] = config2
 
+	// Pretvaranje mape configMap u slice
+	var configs []model.Config
+	for _, conf := range configMap {
+		configs = append(configs, conf)
+	}
+
 	group := model.ConfigGroup{
 		Name:    "db_cg",
 		Version: 2,
-		Configs: configMap,
+		Configs: configs,
 	}
 
 	service.Add(config2)
@@ -65,9 +70,6 @@ func main() {
 
 	router.HandleFunc("/configGroups/", handlerG.Add).Methods("POST")
 	router.HandleFunc("/configs/", handler.Add).Methods("POST")
-
-	router.HandleFunc("/configGroups/{name}/{version}", handlerG.Delete).Methods("DELETE")
-	router.HandleFunc("/configs/{name}/{version}", handler.Delete).Methods("DELETE")
 
 	router.HandleFunc("/configGroups/{nameG}/{versionG}/config/{nameC}/{versionC}", handlerG.AddConfToGroup).Methods("PUT")
 	router.HandleFunc("/configGroups/{nameG}/{versionG}/{nameC}/{versionC}", handlerG.RemoveConfFromGroup).Methods("PUT")
@@ -115,5 +117,4 @@ func main() {
 
 	// Logovanje završetka procesa graceful shutdown-a
 	log.Println("Server shutdown completed")
-
 }
